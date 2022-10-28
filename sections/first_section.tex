@@ -1,7 +1,12 @@
 \section{Cholesky}
 
+Assuming we already have the cholesky decomposition \(L_n\) of \(\Sigma_n\),
+can we find the cholesky decomposition \(L_{n+1}\) of the extended covariance
+matrix \(\Sigma_{n+1}\) faster? It turns out yes, as
 \[
-	L_{n+1}L_{n+1}^T=\begin{pmatrix}
+	\begin{aligned}
+	L_{n+1}L_{n+1}^T
+	&=\begin{pmatrix}
 		L & \\
 		l^T &\lambda
 	\end{pmatrix}
@@ -12,20 +17,23 @@
 	= \begin{pmatrix}
 		L L^T & L l\\
 		l^T L^T & l^T l + \lambda\lambda^T
-	\end{pmatrix}
-	\overset!= \begin{pmatrix}
-		\Sigma & c \\
-		c & \sigma^2
+	\end{pmatrix}\\
+	\overset!&= \begin{pmatrix}
+		\Sigma_n & c_n \\
+		c_n & \sigma_n^2
 	\end{pmatrix} = \Sigma_{n+1}
+	\end{aligned}
 \]
-
+implies \(L = L_n\) and
 \[
-	L^{-1}c = l
+	l_n := l = L^{-1}c_n.
 \]
-
+And finally
 \[
-	\lambda = \text{chol}(\sigma^2 - l^T l)
+	\lambda_n := \lambda = \text{chol}(\sigma^2 - l^T l),
 \]
+where \(\text{chol}(\Sigma)\) is the cholesky decomposition of \(\Sigma\). In
+one dimension this coincides with the square root.
 
 
 \[
