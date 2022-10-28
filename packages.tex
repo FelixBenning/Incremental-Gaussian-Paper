@@ -1,0 +1,48 @@
+
+%%% ENCODING, FONT & LOCALIZATION
+\usepackage[utf8]{inputenc} % use unicode input-encoding (allows unicode characters in the .tex files, default: Asci)
+\usepackage{lmodern} % vectorized version of the "computer modern" font (default) (https://tex.stackexchange.com/q/1390/148164, https://tex.stackexchange.com/q/147194/148164)
+\usepackage[ngerman, english]{babel} %% last language is main
+%\shorthandoff{"} %babel breaks tikz-cd otherwise (activate if used)
+\usepackage{csquotes} %% biblatex wants csquotes (localized quotes) if babel is present
+
+%%% GENERAL IMPROVEMENTS
+\usepackage[unicode, hidelinks]{hyperref} %% clickable links
+\usepackage{enumitem} %% better (customizable) enumerations (e.g. \begin{enumerate}[label=(\roman*)])
+
+
+%%% STYLING
+% \setlength{\parindent}{0em} % No indentation for new paragraphs
+\usepackage{emptypage} % removes page numbers on empty pages
+% \makeatletter \@twosidefalse \makeatother
+\usepackage{xcolor}
+
+
+%%% GRAPHICS & PLOTS
+
+% \usepackage{graphicx} % enable pictures
+\usepackage{wrapfig} % text wrapping around figures
+% \usepackage{tikz, tikz-cd, pgfplots} % plots and sketches
+% \pgfplotsset{compat=1.16}
+
+%%% CODE
+\usepackage[ruled,linesnumbered]{algorithm2e}
+
+% fix algomathdisplay (see: https://tex.stackexchange.com/a/611426/148164)
+\makeatletter
+\renewenvironment{algomathdisplay}
+ {\[}
+ {\@endalgocfline\vspace{-\baselineskip}\]{\DontPrintSemicolon\;}}
+\makeatother
+%%% MATH
+\usepackage{mathtools} % fixes some things from amsmath and adds some new features
+\usepackage{amsthm, amssymb} % amsthm -> proof env, amssymb -> additional symbols
+\usepackage{aligned-overset} % https://tex.stackexchange.com/questions/257529/overset-and-align-environment-how-to-get-correct-alignment
+%% usage: \overset{something}&{=}
+
+%%% Special Symbols
+% \usepackage{bbm} % blackboard numbers: usage \mathbbm{1} (amssymb \mathbb{1} looks bad)
+% \usepackage{cancel} % strike through equation parts to indicate they cancel out
+% %% contradiction symbol
+% \usepackage{wasysym} % lightning symbol
+% \newcommand*{\contradiction}[1][]{\quad\text{{\LARGE\lightning} #1}\ }

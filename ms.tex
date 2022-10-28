@@ -1,0 +1,28 @@
+\documentclass[a4paper]{article}
+
+\input{packages.tex}
+
+%%% EDITING (Annotations, TODO, etc.) 
+\usepackage[draft]{fixme} %final removes annotations %draft includes annotations
+\fxsetup{theme=color}
+%%\fxnote{some note} ,\fxwarning{}, \fxerror{}, \fxfatal{} <- does not allow [final] to compile
+
+%%% BIBLIOGRAPHY
+\usepackage[style=alphabetic, backend=biber, seconds=true, date=iso, urldate=iso, maxcitenames=2]{biblatex}
+\addbibresource{references.bib}
+
+\input{macros.tex}
+
+
+\title{My Title}
+\author{the authors}
+
+\begin{document}
+	\maketitle 
+	\fxerror*{Meta Information for Title}
+
+	\input{sections/abstract.tex}
+	\input{sections/first_section.tex}
+
+	\printbibliography[heading=bibintoc]	
+\end{document}
