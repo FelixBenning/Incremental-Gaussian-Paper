@@ -1,0 +1,81 @@
+\section{Simulating Gaussian Random Variables}
+
+To simulate \(X_{1:n} = (X_1,\dots,X_n)^T \sim \normal(0, \Sigma_n)\) one typically
+searches for \(L_n\) such that
+\[
+	L_n L_n^T = \Sigma_n,
+\]
+because for \(Y_{1:n}\sim\normal(0,\identity)\) independent standard normal
+random variables we have
+\[
+	X_{1:n} = L_n Y_{1:n} \sim \normal(0, \Sigma_n).
+\]
+In particular for a centered gaussian process/random field 
+\(Z=(Z(x))_{x\in\real^\dimension}\) with covariance function \(\C\),
+we can simulate \((Z(x_1),\dots, Z(x_n))\) by calculating \(\Sigma_n\) from its
+covariance function
+\[
+	\Sigma_n = \begin{pmatrix}
+		\C(x_1, x_1) &\dots &\C(x_1, x_n)\\
+		\vdots &  & \vdots \\
+		\C(x_n, x_1) &\dots &\C(x_n, x_n)
+	\end{pmatrix}.
+\]
+But what if you already have simulated \((Z(x_1),\dots,Z(x_n))\) and now want
+to obtain \(Z(x_{n+1})\) without changing your previous values? If you wanted
+to do optimization on a random field for example, \(X_{n+1}\) might even be a
+random variable depending on the previous results. You can hardly start over
+in this case.
+
+The package ``IncrementalGRF.jl'' available on GitHub
+\url{https://github.com/FelixBenning/IncrementalGRF.jl} is built with this
+Incremental evaluation in mind without sacrificing any performance compared to
+batch evaluation.
+
+Its interface is simple
+
+\begin{minted}{julia}
+using IncrementalGRF
+
+dim = 2 # input dimension
+rf = GaussianRandomField(
+	# passing the covariance kernel
+	Kernels.SquaredExponential{Float64, dim}(1)
+) # rf represents one realization of the entire Gaussian Random Field Z
+rf([0., 0]) # rf(0,0) = Z(0,0)(omega)
+rf([1., 0]) # rf(1,0)
+
+# the dot notation broadcasts the "function" rf over the input array
+# i.e. applies it element-wise resulting in [rf(3,0), rf(0,1)]
+rf.([
+  [3., 0],
+  [0., 1.]
+])
+\end{minted}
+An instance of type ``GaussianRandomField'' therefore represents the realization
+of the entire random field \(Z\). As that would be infinite dimensional it can
+not actually eagerly determine this entire random field, so it lazily
+adds evaluations to its internal state whenever invoked.
+
+It turns out that knowing all the evaluation points beforehand does not actually
+help asymptotic performance. In reality there is a slight improvement due to
+memory access issues. But if you incrementally provide the next \(k\) points
+instead of all points at once where \(k\) is large enough, then there is no
+real difference either. This is especially interesting for random fields with
+\(k\) output dimensions, because you can rewrite \(Z_i(x)\) into \(Z(x,i)\). So
+evaluating \(Z\) at one point requires the evaluation of \(k\) points
+\[
+	Z(x) = (Z(x,1),\dots,Z(x,k)).
+\]
+An example for such a use case, is simulation of the gaussian random field
+\((Z,\nabla Z)\), which has \(\dimension+1\) out-dimensions for \(\dimension\)
+inputs.
+
+\subsection{Caveat: No pivot}
+
+While this method has no drawbacks compared to the standard cholesky
+decomposition, it has no analog for the pivoted cholesky decomposition. The
+pivoted cholesky decomposition essentially reorders the evaluation points for
+numerical stability. And since we are incrementally evaluating our random field,
+we can not retroactively change the order of evaluation.
+

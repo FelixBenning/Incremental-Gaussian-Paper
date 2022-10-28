@@ -1,1 +1,45 @@
-\section{First Section}
+\section{Cholesky}
+
+\[
+	L_{n+1}L_{n+1}^T=\begin{pmatrix}
+		L & \\
+		l^T &\lambda
+	\end{pmatrix}
+	\begin{pmatrix}
+		L^T &  l\\
+		&\lambda^T
+	\end{pmatrix}
+	= \begin{pmatrix}
+		L L^T & L l\\
+		l^T L^T & l^T l + \lambda\lambda^T
+	\end{pmatrix}
+	\overset!= \begin{pmatrix}
+		\Sigma & c \\
+		c & \sigma^2
+	\end{pmatrix} = \Sigma_{n+1}
+\]
+
+\[
+	L^{-1}c = l
+\]
+
+\[
+	\lambda = \text{chol}(\sigma^2 - l^T l)
+\]
+
+
+\[
+	\begin{pmatrix}
+		L & \\
+		l & \lambda
+	\end{pmatrix}
+	\begin{pmatrix}
+		Y_1\\
+		\vdots\\
+		Y_{n+1}
+	\end{pmatrix}
+	= \begin{pmatrix}
+		L Y_{:n} \\
+	 	l Y_{:n} + \lambda Y_{n+1}
+	\end{pmatrix}
+\]
