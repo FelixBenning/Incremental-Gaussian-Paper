@@ -1,9 +1,15 @@
 \section{Block Packed Storage}\label{sec: memory layout}
 
+Let \(L\) be a triangular matrix of size \(km\). We can then represent
+\(L\) using full \(k\times k\) block matrices \(L_i\) in the following way
 \[
-	\begin{pmatrix}
+	L = \begin{pmatrix}
 		L_0 & \\
 		L_1 & L_2 \\
 		L_3 & L_4 & L_5 \\
+		\vdots & & & \ddots \\
 	\end{pmatrix}
 \]
+where all the matrices \(L_0,L_2,L_5,\dots\) with index \(i=(\sum_{j=1}^nj) -
+1\) for some \(n\in\nat\) have zeros above their diagonal, while the other
+matrices are full matrices.
