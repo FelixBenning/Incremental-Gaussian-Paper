@@ -134,4 +134,33 @@ represents a negative conditional variance. In other words: the existing points
 explain the new point so well (\(l^Tl\) is large), such that almost no
 randomness is left and numerical errors make the randomness negative. This
 happens especially for very smooth random fields where adjacent points are
-excellent predictors.
+excellent predictors. The pivoted Cholesky decomposition reorders the points
+such that the conditional variance is as high as possible (i.e. usually continue
+with the point farthest away) and at the end fill-in the remaining points
+truncating the variance to zero if necessary.
+
+Unfortunately we can not reorder the points in the incremental case. And if the
+points are for example an ordered discretization of the interval \([0,1]\) and
+the variance becomes numerically zero once we know the previous \(3\) points,
+then after the first three points we will always truncate the variance to zero
+and use the conditional expectation for the next point. This removes all the
+randomness from then on, and the resulting simulation is anything but the desired
+random field.
+
+A slightly less naïve idea would be to pretend like an evaluation never happened
+whenever the variance becomes numerically zero. We still return the conditional
+expectation but do not remember the resulting point so it has no effect on later
+points. For a better intuition let us pretend that if we skip the 4th and 5th point
+in the previous example, the 6th one is random enough again for the conditional
+variance to be numerically non-zero. Plotting the conditional expectation of
+point \(4\) and \(5\) results in a very smooth curve which suddenly jumps
+to the truly random point \(6\), causing a visible fault-line to appear. If one
+had first sampled point \(6\) and then calculated the conditional expectation
+of \(4\) and \(5\), they would have taken point \(6\) into account and would
+have curved towards it. But as we did not take it into account, the resulting
+simulation has these discontinuities.
+
+The visually least intrusive measure seems to be adding iid normal distributed
+noise (jitter) to every point. 
+
+
