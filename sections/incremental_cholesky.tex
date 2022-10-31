@@ -1,0 +1,137 @@
+\section{Incremental Cholesky}
+
+Assuming we already have the cholesky decomposition \(L_n\) of \(\Sigma_n\),
+can we find the cholesky decomposition \(L_{n+1}\) of the extended covariance
+matrix \(\Sigma_{n+1}\) faster? It turns out yes, as
+\[
+	\begin{aligned}
+	L_{n+1}L_{n+1}^T
+	&=\begin{pmatrix}
+		L & \\
+		l^T &\lambda
+	\end{pmatrix}
+	\begin{pmatrix}
+		L^T &  l\\
+		&\lambda^T
+	\end{pmatrix}
+	= \begin{pmatrix}
+		L L^T & L l\\
+		l^T L^T & l^T l + \lambda\lambda^T
+	\end{pmatrix}\\
+	\overset!&= \begin{pmatrix}
+		\Sigma_n & c_n \\
+		c_n & \sigma_n^2
+	\end{pmatrix} = \Sigma_{n+1}
+	\end{aligned}
+\]
+implies \(L = L_n\) and
+\[
+	l_n := l = L^{-1}c_n.
+\]
+And finally
+\[
+	\lambda_n := \lambda = \sqrt{\sigma_n^2 - l^T l}.
+\]
+
+If we now apply \(L_{n+1}\) to \(Y_{1:(n+1)}\), we get
+\[
+	Z_{1:(n+1)}
+	= \begin{pmatrix}
+		L_n & \\
+		l_n^T & \lambda_n
+	\end{pmatrix}
+	Y_{1:(n+1)}
+	= \begin{pmatrix}
+		L_n Y_{1:n} \\
+	 	l_n^T Y_{1:n} + \lambda_n Y_{n+1}
+	\end{pmatrix}
+\]
+So if we reuse \(Y_{1:n}\), then we will also get the same \(Z_{1:n}\). Assuming
+\(L_n\) is invertible (\(\Sigma_n\) strictly positive definite), we have
+\[
+	\E[Z_{n+1}\mid Z_{1:n}]
+	= \E[Z_{n+1}\mid Y_{1:n}] = \langle l_n, Y_{1:n}\rangle.
+\]
+So \(\lambda_n\) represents the conditional standard deviation, \(Y_{n+1}\) the
+``new randomness''.
+
+If we have already returned \(Z_{1:n}\) previously, we only need to
+\begin{enumerate}
+	\item Generate a new independent standard Gaussian random variable \(Y_{n+1}\)
+	\item Calculate \(l_n = L_n^{-1}c_n\) and \(\lambda_n = \sqrt{\sigma_n^2- l_n^T l_n}\)
+	\item Return \(Z_{n+1} = \langle l_n, Y_{1:n}\rangle + \lambda_n Y_{n+1}\)
+\end{enumerate}
+We only need to store \(L_n\) and \(Y_{1:n}\). In the case of random fields,
+it is typically also necessary to store the points \((x_1,\dots, x_n)\), where
+the random field was evaluated so far. Because we need them to calculate the
+covariance \(c_n\) with a new point.
+
+
+\subsection{Performance}
+
+It turns out, that adding the row \((l_n^T ,\lambda_n)\) to \(L_n\) is exactly
+how the Cholesky-Banachiewicz algorithm for determining the Cholesky
+decomposition is defined. So we are literally doing the exact same calculations.
+The only change is the order of the operations. So the question is how memory
+access friendly the respective algorithms are. The advantage is, that we do not
+have to fetch all the rows from memory once we want to multiply
+\(L_n\) with \(Y_{1:n}\). Instead we can do this multiplication immediately after
+we calculated \(l_n\) and \(\lambda_n\). But we do have to repeatedly retrieve
+\(Y_{1:n}\) on the other hand. So in this sense the effect cancels out.
+
+To store the \(Y_{1:n}\) we simply use a dynamic array. To save the matrix \(L_n\)
+we do not want to use a normal \(2\) dimensional array. Because, to extend a
+matrix by one row and column, you would have to extend the rows by one, which
+are stored one after the other in a row major format which essentially
+requires moving all of them (analogously columns in column major).
+
+So instead we want to use packed storage
+\[
+	\begin{bmatrix}
+		L_{11}	
+	\end{bmatrix}
+	\begin{bmatrix}
+		L_{21} & L_{22}
+	\end{bmatrix}
+	\begin{bmatrix}
+		L_{31} & L_{32} & L_{33}
+	\end{bmatrix}
+	\dots
+\]
+As we only need to append \((l_n^T, \lambda_n)\), we can again use a dynamic
+array. Unfortunately packed storage only allows vectorized BLAS routines
+(BLAS-2) but not block-wise operations (BLAS-3). And similarly the most performant
+cholesky decompositions want to access the data block-wise. So adding just one
+row \(l_n^T\) is not as performant as adding a block. To fix the first problem
+we propose ``Block Packed Storage'', which we will describe in Section~\ref{sec: memory
+layout}. To solve the second problem, one needs to aks for \(k\) new points in
+batches as described in the introduction. For random fields with large enough
+output dimension, this is not a problem as mentioned. But for the benefit of
+random fields with small output dimension, it makes sense to specialize
+\begin{minted}{julia}
+	Base.broadcasted
+\end{minted}
+in order for \mintinline{julia}{rf.(all_evaluation_points)} to be as performant
+as possible.
+
+Lastly one can improve on the allocation performance of dynamic arrays, by implementing
+\begin{minted}{julia}
+	sizehint!(::GaussianRandomField, ::Int)	
+\end{minted}
+by translating the size requirements for the given number of points into a
+\mintinline{julia}{sizehint!} for the underlying dynamic arrays. But as
+\mintinline{julia}{sizehint!} is just a suggestion but not a guarantee, the
+checks at every \mintinline{julia}{push!} have to remain. That
+cost is negligible though, in comparison to the cost of calculating the
+value of the random field at the point, due to the \(O(n^2)\) complexity of
+calculating a single value. But again a specialization of
+\mintinline{julia}{Base.broadcasted} can remove even this tiny speed bump.
+
+\subsection{Numerical Stability}
+
+Numerical errors might cause \(\sigma^2 - l^T l\) to be negative which
+represents a negative conditional variance. In other words: the existing points
+explain the new point so well (\(l^Tl\) is large), such that almost no
+randomness is left and numerical errors make the randomness negative. This
+happens especially for very smooth random fields where adjacent points are
+excellent predictors.

@@ -1,6 +1,6 @@
 \section{Simulating Gaussian Random Variables}
 
-To simulate \(X_{1:n} = (X_1,\dots,X_n)^T \sim \normal(0, \Sigma_n)\) one typically
+To simulate \(Z_{1:n} = (Z_1,\dots,Z_n)^T \sim \normal(0, \Sigma_n)\) one typically
 searches for \(L_n\) such that
 \[
 	L_n L_n^T = \Sigma_n,
@@ -8,8 +8,9 @@ searches for \(L_n\) such that
 because for \(Y_{1:n}\sim\normal(0,\identity)\) independent standard normal
 random variables we have
 \[
-	X_{1:n} = L_n Y_{1:n} \sim \normal(0, \Sigma_n).
+	Z_{1:n} = L_n Y_{1:n} \sim \normal(0, \Sigma_n).
 \]
+The algorithm of choice is typically the cholesky decomposition.
 In particular for a centered gaussian process/random field 
 \(Z=(Z(x))_{x\in\real^\dimension}\) with covariance function \(\C\),
 we can simulate \((Z(x_1),\dots, Z(x_n))\) by calculating \(\Sigma_n\) from its
@@ -22,10 +23,10 @@ covariance function
 	\end{pmatrix}.
 \]
 But what if you already have simulated \((Z(x_1),\dots,Z(x_n))\) and now want
-to obtain \(Z(x_{n+1})\) without changing your previous values? If you wanted
-to do optimization on a random field for example, \(X_{n+1}\) might even be a
-random variable depending on the previous results. You can hardly start over
-in this case.
+to obtain \(Z_{n+1} = Z(x_{n+1})\) without changing your previous values? If you wanted
+to do optimization on a random field for example, the position \(X_{n+1}\) might
+even be a random variable depending on the previous results. You can hardly
+start over in this case.
 
 The package ``IncrementalGRF.jl'' available on GitHub
 \url{https://github.com/FelixBenning/IncrementalGRF.jl} is built with this
