@@ -88,18 +88,19 @@ requires moving all of them (analogously columns in column major).
 So instead we want to use packed storage
 \[
 	\begin{bmatrix}
-		L_{11}	
+		L_{00}	
 	\end{bmatrix}
 	\begin{bmatrix}
-		L_{21} & L_{22}
+		L_{10} & L_{11}
 	\end{bmatrix}
 	\begin{bmatrix}
-		L_{31} & L_{32} & L_{33}
+		L_{20} & L_{21} & L_{22}
 	\end{bmatrix}
 	\dots
 \]
 As we only need to append \((l_n^T, \lambda_n)\), we can again use a dynamic
-array. Unfortunately packed storage only allows vectorized BLAS routines
+array. Another benefit of packed storage is, that it saves half the space a
+full matrix requires. Unfortunately packed storage only allows vectorized BLAS routines
 (BLAS-2) but not block-wise operations (BLAS-3). And similarly the most performant
 cholesky decompositions want to access the data block-wise. So adding just one
 row \(l_n^T\) is not as performant as adding a block. To fix the first problem
@@ -116,12 +117,12 @@ as possible.
 
 Lastly one can improve on the allocation performance of dynamic arrays, by implementing
 \begin{minted}{julia}
-	sizehint!(::GaussianRandomField, ::Int)	
+	sizehint!(::GaussianRandomField, ::Int).
 \end{minted}
-by translating the size requirements for the given number of points into a
-\mintinline{julia}{sizehint!} for the underlying dynamic arrays. But as
-\mintinline{julia}{sizehint!} is just a suggestion but not a guarantee, the
-checks at every \mintinline{julia}{push!} have to remain. That
+For that we need to translate the size requirements for the given number of
+points into a \mintinline{julia}{sizehint!} for the underlying dynamic arrays.
+But as \mintinline{julia}{sizehint!} is just a suggestion but not a guarantee,
+the checks at every \mintinline{julia}{push!} have to remain. That
 cost is negligible though, in comparison to the cost of calculating the
 value of the random field at the point, due to the \(O(n^2)\) complexity of
 calculating a single value. But again a specialization of
