@@ -139,6 +139,8 @@ such that the conditional variance is as high as possible (i.e. usually continue
 with the point farthest away) and at the end fill-in the remaining points
 truncating the variance to zero if necessary.
 
+\subsubsection{Truncation}
+
 Unfortunately we can not reorder the points in the incremental case. And if the
 points are for example an ordered discretization of the interval \([0,1]\) and
 the variance becomes numerically zero once we know the previous \(3\) points,
@@ -146,6 +148,8 @@ then after the first three points we will always truncate the variance to zero
 and use the conditional expectation for the next point. This removes all the
 randomness from then on, and the resulting simulation is anything but the desired
 random field.
+
+\subsubsection{Skipping}
 
 A slightly less naïve idea would be to pretend like an evaluation never happened
 whenever the variance becomes numerically zero. We still return the conditional
@@ -160,7 +164,37 @@ of \(4\) and \(5\), they would have taken point \(6\) into account and would
 have curved towards it. But as we did not take it into account, the resulting
 simulation has these discontinuities.
 
+\subsubsection{Jitter}
+
 The visually least intrusive measure seems to be adding iid normal distributed
-noise (jitter) to every point. 
+noise (jitter) to every point. Computationally this adds the diagonal \(\epsilon^2
+\identity\) to the covariance matrix. The calculation of \(\lambda_n\) then
+looks like
+\[
+	\lambda_n = \sqrt{\sigma_n^2 + \epsilon^2 - l_n^T l_n}.
+\]
+The interpretation is, that we actually evaluate the random field
+\[
+	\tilde{Z}(x) = Z(x) + \epsilon Y_x,
+\]
+where \(Y_x\overset{iid}\sim\normal(0,1)\). We can then interpret \(\tilde{Z}\)
+as an estimator for \(Z\). The confidence interval of the estimation is
+proportional to \(\epsilon\) everywhere. ``Everywhere'' is the keyword here, we
+therefore know that errors do not build up in contrast to the first method
+proposed.
 
+Another nice property of this method is, that it visibly fails whenever we zoom
+in too far (ask questions which require more precision than we have). Because
+you can see the jitter caused by the iid noise in that case. Zoom out far enough
+and the curve looks smooth on the other hand.
 
+\subsubsection{Our Solution}
+
+The constructor of \mintinline{julia}{GaussianRandomField} accepts an optional 
+\mintinline{julia}{jitter} parameter defining \(\epsilon\). Whenever it is too
+small and negative conditional variance occurs, we fall back to the ``skipping''
+approach but throw a warning. For a pure ``jitter'' simulation you can treat these
+warnings as errors and increase jitter. For a pure ``skipping'' simulation
+simply set \mintinline{julia}{jitter} to zero.
+
+\fxnote{add plots}
