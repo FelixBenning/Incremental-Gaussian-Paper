@@ -1,9 +1,83 @@
 \section{Block Packed Storage}\label{sec: memory layout}
 
+Let \(\Lmatrix_n\) be a triangular matrix of size \(kn\). We can then represent
+\(\Lmatrix_n\) using full \(k\times k\) block matrices \(L_i\) in the following way
 \[
-	\begin{pmatrix}
+	\Lmatrix_n = \begin{pmatrix}
 		L_0 & \\
 		L_1 & L_2 \\
 		L_3 & L_4 & L_5 \\
+		\vdots & & & \ddots \\
+		L_{\frac{n(n-1)}2} & & \dots & & L_{\frac{n(n+1)}2 -1}
 	\end{pmatrix}
 \]
+where all the matrices \(L_0,L_2,L_5,\dots, L_{\frac{n(n+1)}2-1}\) with index
+\(i=(\sum_{j=1}^rj) - 1\) for some \(r\in\nat\) have zeros above their diagonal,
+while the other matrices are full matrices.
+
+If we now view \(Z_{n+1}\) as a \(k\) dimensional random vector we want to
+simulate in bulk, we can still use Algorithm~\ref{algo: sim Z_{n+1}}, if we
+use
+\[
+	c_n = \begin{pmatrix}
+		C_0\\
+		\vdots\\
+		C_{n-1}	
+	\end{pmatrix} \in \real^{kn\times k}
+\]
+where \(C_r\in\real^{k\times k}\) are block matrices representing the covariance
+of the old random vectors \(Z_i\) with \(Z_{n+1}\). And
+\[
+	\sigma_n^2 \in \real^{k\times k}
+\]
+would be the covariance matrix of \(Z_{n+1}\) itself. In order to apply
+Algorithm~\ref{algo: sim Z_{n+1}}, we only need to reinterpret the square root in
+line~\ref{algo-line: sqrt} as a cholesky decomposition.
+
+{
+	\newcommand{\xc}{{\color{red} C}}
+	\newcommand{\xL}{{\color{violet} L}}
+	\newcommand{\xl}{{\color{teal} \Gamma}}
+	\begin{algorithm}
+		\caption{\(\Lmatrix_n^{-1}c_n\) stored as new row resulting in \(\Lmatrix_{n+1}\)}	
+		\label{algo: solve linear equation}
+		\For{\(r = 0,\dots,n-1\)}{
+			\(\xc \leftarrow C_r\)\tcp*[f]{red cache}\;
+			\For{\(i = 0,\dots, r-1\)}{
+				\(\xL \leftarrow L_{\frac{r(r+1)}2+i}\)\tcp*[f]{violet cache}\;
+				\(\xl \leftarrow L_{\frac{n(n+1)}2+i}\)\tcp*[f]{teal cache}\;
+				\(\xc = \xc - \xL\xl^T\)
+			}
+			\(\xL \leftarrow L_{\frac{r(r+1)}2+r}\)\tcp*[f]{
+				\(=L_{\frac{(r+2)(r+1)}2 -1}\) i.e. on the diagonal}\;
+			\(\xc = \xL^{-1} \xc\)\;
+			\(L_{\frac{n(n+1)}2+r} \leftarrow \xc^T\)\;
+		}
+	\end{algorithm}
+}
+All of the caches in Algorithm~\ref{algo: solve linear equation} are of size
+\(k\times k\).  Our total cache needs are therefore \(3k^2\). To reimplement the
+remaining steps of Algorithm~\ref{algo: sim Z_{n+1}} we use Algorithm~\ref{algo:
+calc lambda and simulate Z_{n+1}}. As the blue and violet cache only require
+\(k\times 1\) space, it requires less than \(3k^2\) cache space for \(k\ge 2\).
+
+{
+	\newcommand{\xS}{{\color{red} S}}
+	\newcommand{\xl}{{\color{teal} \Gamma}}
+	\newcommand{\xY}{{\color{violet} Y}}
+	\newcommand{\xZ}{{\color{blue} Z}}
+	\begin{algorithm}
+		\caption{Calculation of \(\lambda_n\) and Simulation of \(Z_{n+1}\)}	
+		\label{algo: calc lambda and simulate Z_{n+1}}
+		\(\xS \leftarrow \sigma_n\)\tcp*[f]{red cache}\;
+		\(\xZ \leftarrow 0_{k\times 1}\)\tcp*[f]{blue cache}\;
+		\For{\(i = 0,\dots,n-1\)}{
+			\(\xl \leftarrow L_{\frac{n(n+1)}2+i}\)\tcp*[f]{teal cache}\;
+			\(\xS = \xS - \xl\xl^T\)\;
+			\(\xY \leftarrow Y_i\)\tcp*[f]{violet cache}\;
+			\(\xZ = \xZ + \xl^T \xY\)\;
+		}
+		\(L_{\frac{n(n+1)}2 + n} \leftarrow \chol(\xS)\)\tcp*[f]{\(=L_{\frac{(n+2)(n+1)}2-1}\) i.e. on the diagonal}\;
+		\KwRet{\(\xZ\)}
+	\end{algorithm}
+}

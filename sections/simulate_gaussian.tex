@@ -1,14 +1,14 @@
 \section{Simulating Gaussian Random Variables}
 
 To simulate \(Z_{1:n} = (Z_1,\dots,Z_n)^T \sim \normal(0, \Sigma_n)\) one typically
-searches for \(L_n\) such that
+searches for \(\Lmatrix_n\) such that
 \[
-	L_n L_n^T = \Sigma_n,
+	\Lmatrix_n \Lmatrix_n^T = \Sigma_n,
 \]
 because for \(Y_{1:n}\sim\normal(0,\identity)\) independent standard normal
 random variables we have
 \[
-	Z_{1:n} = L_n Y_{1:n} \sim \normal(0, \Sigma_n).
+	Z_{1:n} = \Lmatrix_n Y_{1:n} \sim \normal(0, \Sigma_n).
 \]
 The algorithm of choice is typically the cholesky decomposition.
 In particular for a centered gaussian process/random field 

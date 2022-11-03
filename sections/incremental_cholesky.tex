@@ -1,22 +1,22 @@
 \section{Incremental Cholesky}
 
-Assuming we already have the cholesky decomposition \(L_n\) of \(\Sigma_n\),
-can we find the cholesky decomposition \(L_{n+1}\) of the extended covariance
+Assuming we already have the cholesky decomposition \(\Lmatrix_n\) of \(\Sigma_n\),
+can we find the cholesky decomposition \(\Lmatrix_{n+1}\) of the extended covariance
 matrix \(\Sigma_{n+1}\) faster? It turns out yes, as
 \[
 	\begin{aligned}
-	L_{n+1}L_{n+1}^T
+	\Lmatrix_{n+1}\Lmatrix_{n+1}^T
 	&=\begin{pmatrix}
-		L & \\
+		\Lmatrix & \\
 		l^T &\lambda
 	\end{pmatrix}
 	\begin{pmatrix}
-		L^T &  l\\
+		\Lmatrix^T &  l\\
 		&\lambda^T
 	\end{pmatrix}
 	= \begin{pmatrix}
-		L L^T & L l\\
-		l^T L^T & l^T l + \lambda\lambda^T
+		\Lmatrix \Lmatrix^T & \Lmatrix l\\
+		l^T \Lmatrix^T & l^T l + \lambda\lambda^T
 	\end{pmatrix}\\
 	\overset!&= \begin{pmatrix}
 		\Sigma_n & c_n \\
@@ -24,30 +24,30 @@ matrix \(\Sigma_{n+1}\) faster? It turns out yes, as
 	\end{pmatrix} = \Sigma_{n+1}
 	\end{aligned}
 \]
-implies \(L = L_n\) and
+implies \(\Lmatrix = \Lmatrix_n\) and
 \[
-	l_n := l = L^{-1}c_n.
+	l_n := l = \Lmatrix^{-1}c_n.
 \]
 And finally
 \[
 	\lambda_n := \lambda = \sqrt{\sigma_n^2 - l^T l}.
 \]
 
-If we now apply \(L_{n+1}\) to \(Y_{1:(n+1)}\), we get
+If we now apply \(\Lmatrix_{n+1}\) to \(Y_{1:(n+1)}\), we get
 \[
 	Z_{1:(n+1)}
 	= \begin{pmatrix}
-		L_n & \\
+		\Lmatrix_n & \\
 		l_n^T & \lambda_n
 	\end{pmatrix}
 	Y_{1:(n+1)}
 	= \begin{pmatrix}
-		L_n Y_{1:n} \\
+		\Lmatrix_n Y_{1:n} \\
 	 	l_n^T Y_{1:n} + \lambda_n Y_{n+1}
 	\end{pmatrix}
 \]
 So if we reuse \(Y_{1:n}\), then we will also get the same \(Z_{1:n}\). Assuming
-\(L_n\) is invertible (\(\Sigma_n\) strictly positive definite), we have
+\(\Lmatrix_n\) is invertible (\(\Sigma_n\) strictly positive definite), we have
 \[
 	\E[Z_{n+1}\mid Z_{1:n}]
 	= \E[Z_{n+1}\mid Y_{1:n}] = \langle l_n, Y_{1:n}\rangle.
@@ -55,13 +55,21 @@ So if we reuse \(Y_{1:n}\), then we will also get the same \(Z_{1:n}\). Assuming
 So \(\lambda_n\) represents the conditional standard deviation, \(Y_{n+1}\) the
 ``new randomness''.
 
-If we have already returned \(Z_{1:n}\) previously, we only need to
-\begin{enumerate}
-	\item Generate a new independent standard Gaussian random variable \(Y_{n+1}\)
-	\item Calculate \(l_n = L_n^{-1}c_n\) and \(\lambda_n = \sqrt{\sigma_n^2- l_n^T l_n}\)
-	\item Return \(Z_{n+1} = \langle l_n, Y_{1:n}\rangle + \lambda_n Y_{n+1}\)
-\end{enumerate}
-We only need to store \(L_n\) and \(Y_{1:n}\). In the case of random fields,
+\begin{algorithm}
+	\caption{Simulate \(Z_{n+1}\)}\label{algo: sim Z_{n+1}}
+	\KwIn{
+		\(c_n\) covariance vector of \(Z_{n+1}\) to \(Z_{1:n}\)
+		\(\sigma_n^2\) variance of \(Z_{n+1}\)
+	}
+	Generate a new independent standard Gaussian random variable \(Y_{n+1}\)\;
+	\(l_n \leftarrow \Lmatrix_n^{-1}c_n\)\; 
+	\(\lambda_n \leftarrow \sqrt{\sigma_n^2- l_n^T l_n}\)\label{algo-line: sqrt}\;
+	\(Z_{n+1} \leftarrow \langle l_n, Y_{1:n}\rangle + \lambda_n Y_{n+1}\)\;
+	Append \(Y_{n+1}\) to \(Y_{1:n}\),
+	append \((l_n, \lambda_n)\) to \(\Lmatrix_n\)\;
+	\KwRet{\(Z_{n+1}\)}
+\end{algorithm}
+We only need to store \(\Lmatrix_n\) and \(Y_{1:n}\). In the case of random fields,
 it is typically also necessary to store the points \((x_1,\dots, x_n)\), where
 the random field was evaluated so far. Because we need them to calculate the
 covariance \(c_n\) with a new point.
@@ -69,17 +77,17 @@ covariance \(c_n\) with a new point.
 
 \subsection{Performance}
 
-It turns out, that adding the row \((l_n^T ,\lambda_n)\) to \(L_n\) is exactly
+It turns out, that adding the row \((l_n^T ,\lambda_n)\) to \(\Lmatrix_n\) is exactly
 how the Cholesky-Banachiewicz algorithm for determining the Cholesky
 decomposition is defined. So we are literally doing the exact same calculations.
 The only change is the order of the operations. So the question is how memory
 access friendly the respective algorithms are. The advantage is, that we do not
 have to fetch all the rows from memory once we want to multiply
-\(L_n\) with \(Y_{1:n}\). Instead we can do this multiplication immediately after
+\(\Lmatrix_n\) with \(Y_{1:n}\). Instead we can do this multiplication immediately after
 we calculated \(l_n\) and \(\lambda_n\). But we do have to repeatedly retrieve
 \(Y_{1:n}\) on the other hand. So in this sense the effect cancels out.
 
-To store the \(Y_{1:n}\) we simply use a dynamic array. To save the matrix \(L_n\)
+To store the \(Y_{1:n}\) we simply use a dynamic array. To save the matrix \(\Lmatrix_n\)
 we do not want to use a normal \(2\) dimensional array. Because, to extend a
 matrix by one row and column, you would have to extend the rows by one, which
 are stored one after the other in a row major format which essentially
@@ -88,13 +96,13 @@ requires moving all of them (analogously columns in column major).
 So instead we want to use packed storage
 \[
 	\begin{bmatrix}
-		L_{00}	
+		l_{00}	
 	\end{bmatrix}
 	\begin{bmatrix}
-		L_{10} & L_{11}
+		l_{10} & l_{11}
 	\end{bmatrix}
 	\begin{bmatrix}
-		L_{20} & L_{21} & L_{22}
+		l_{20} & l_{21} & l_{22}
 	\end{bmatrix}
 	\dots
 \]

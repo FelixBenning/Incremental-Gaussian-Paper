@@ -4,7 +4,6 @@
 \usepackage{lmodern} % vectorized version of the "computer modern" font (default) (https://tex.stackexchange.com/q/1390/148164, https://tex.stackexchange.com/q/147194/148164)
 \usepackage[ngerman, english]{babel} %% last language is main
 %\shorthandoff{"} %babel breaks tikz-cd otherwise (activate if used)
-\usepackage{csquotes} %% biblatex wants csquotes (localized quotes) if babel is present
 
 %%% GENERAL IMPROVEMENTS
 \usepackage[unicode, hidelinks]{hyperref} %% clickable links
@@ -28,6 +27,9 @@
 %%% CODE
 \usepackage[ruled,linesnumbered]{algorithm2e}
 \usepackage{minted}
+
+%% loaded after minted
+\usepackage{csquotes} %% biblatex wants csquotes (localized quotes) if babel is present
 
 % fix algomathdisplay (see: https://tex.stackexchange.com/a/611426/148164)
 \makeatletter
