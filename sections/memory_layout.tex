@@ -55,7 +55,7 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 			\For{\(i = 0,\dots, r-1\)}{
 				{
 					\color{lightgray}
-				wait for \(i\le\) finished\_r\tcp*[f]{needed for parallelization safety}\label{algo-line: parallel safety check}\;
+				wait for \(i\le\) finished\_r\tcp*[f]{parallelization safety}\label{algo-line: parallel safety check}\;
 				}
 				\(\xL \leftarrow L_{g(r)+i}\)\tcp*[f]{violet cache}\;
 				\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
