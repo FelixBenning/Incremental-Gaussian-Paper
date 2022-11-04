@@ -50,9 +50,13 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 			Can be in-place if \(c_n^T\) is stored in this new row before usage.
 		}	
 		\label{algo: solve linear equation}
-		\For{\(r = 0,\dots,n-1\)}{
+		\For(in parallel){\(r = 0,\dots,n-1\)}{
 			\(\xc \leftarrow C_r^T\)\tcp*[f]{red cache, \(L_{g(n)+r}\) if in-place}\;
 			\For{\(i = 0,\dots, r-1\)}{
+				{
+					\color{lightgray}
+				check \(i\le\) finished\_r\tcp*[f]{needed for parallelization safety}\label{algo-line: parallel safety check}\;
+				}
 				\(\xL \leftarrow L_{g(r)+i}\)\tcp*[f]{violet cache}\;
 				\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
 				\(\xc = \xc - \xl\xL^T\)
@@ -61,6 +65,12 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 				\(=L_{g(r+1) -1}\) i.e. on the diagonal}\;
 			\(\xc = \xc/\xL^T\)\;
 			\(L_{g(n)+r} \leftarrow \xc\)\;
+			{
+				\color{lightgray}
+				acquire lock: finished\_r\;
+				finished\_r \(\leftarrow r\)\tcp*[f]{due to line~\ref{algo-line: parallel safety check} equivalent to increment}\;
+				release lock: finished\_r\;
+			}
 		}
 	\end{algorithm}
 }
