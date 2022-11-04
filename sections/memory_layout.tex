@@ -45,19 +45,22 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 	\newcommand{\xL}{{\color{violet} L}}
 	\newcommand{\xl}{{\color{teal} \Gamma}}
 	\begin{algorithm}
-		\caption{\(\Lmatrix_n^{-1}c_n\) stored as new row resulting in \(\Lmatrix_{n+1}\)}	
+		\caption{
+			\((\Lmatrix_n^{-1}c_n)^T=c_n^T (\Lmatrix_n^T)^{-1}\) stored as new row in \(\Lmatrix_{n+1}\).
+			Can be in-place if \(c_n^T\) is stored in this new row before usage.
+		}	
 		\label{algo: solve linear equation}
 		\For{\(r = 0,\dots,n-1\)}{
-			\(\xc \leftarrow C_r\)\tcp*[f]{red cache}\;
+			\(\xc \leftarrow C_r^T\)\tcp*[f]{red cache, \(L_{g(n)+r}\) if in-place}\;
 			\For{\(i = 0,\dots, r-1\)}{
 				\(\xL \leftarrow L_{g(r)+i}\)\tcp*[f]{violet cache}\;
 				\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
-				\(\xc = \xc - \xL\xl^T\)
+				\(\xc = \xc - \xl\xL^T\)
 			}
 			\(\xL \leftarrow L_{g(r)+r}\)\tcp*[f]{
 				\(=L_{g(r+1) -1}\) i.e. on the diagonal}\;
-			\(\xc = \xL^{-1} \xc\)\;
-			\(L_{g(n)+r} \leftarrow \xc^T\)\;
+			\(\xc = \xc/\xL^T\)\;
+			\(L_{g(n)+r} \leftarrow \xc\)\;
 		}
 	\end{algorithm}
 }
