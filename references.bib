@@ -14,8 +14,7 @@
   urldate = {2022-10-31},
   abstract = {This chapter demonstrates how to leverage the Thrust parallel template library to implement high performance applications with minimal programming effort. With the introduction of CUDA C/C++, developers can harness the massive parallelism of the graphics processing unit (GPU) through a standard programming language. CUDA allows developers to make fine-grained decisions about how computations are decomposed into parallel threads and executed on the device. The level of control offered by CUDA C/C++ is an important feature; it facilitates the development of high-performance algorithms for a variety of computationally demanding tasks which merit significant optimization and profit from low-level control of the mapping onto hardware. With Thrust, developers describe their computation using a collection of high-level algorithms and completely delegate the decision of how to implement the computation to the library. Thrust is implemented entirely within CUDA C/C++ and maintains interoperability with the rest of the CUDA ecosystem. Interoperability is an important feature because no single language or library is the best tool for every problem. Thrust presents a style of programming emphasizing genericity and composability. Indeed, the vast majority of Thrust's functionality is derived from four fundamental parallel algorithms—for each, reduce, scan, and sort. Thrust's high-level algorithms enhance programmer productivity by automating the mapping of computational tasks onto the GPU. Thrust also boosts programmer productivity by providing a rich set of algorithms for common patterns.},
   isbn = {978-0-12-385963-1},
-  langid = {english},
-  file = {C\:\\Users\\felix\\paper\\2012_Bell_Hoberock\\Bell_Hoberock_2012_Chapter 26 - Thrust.pdf;C\:\\Users\\felix\\Zotero\\storage\\HT5DEDFM\\B9780123859631000265.html}
+  langid = {english}
 }
 
 @misc{menesesGGArrayDynamicallyGrowable2022,
@@ -33,8 +32,7 @@
   urldate = {2022-10-31},
   abstract = {We present a dynamically Growable GPU array (GGArray) fully implemented in GPU that does not require synchronization with the host. The idea is to improve the programming of GPU applications that require dynamic memory, by offering a structure that does not require pre-allocating GPU VRAM for the worst case scenario. The GGArray is based on the LFVector, by utilizing an array of them in order to take advantage of the GPU architecture and the synchronization offered by thread blocks. This structure is compared to other state of the art ones such as a pre-allocated static array and a semi-static array that needs to be resized through communication with the host. Experimental evaluation shows that the GGArray has a competitive insertion and resize performance, but it is slower for regular parallel memory accesses. Given the results, the GGArray is a potentially useful structure for applications with high uncertainty on the memory usage as well as applications that have phases, such as an insertion phase followed by a regular GPU phase. In such cases, the GGArray can be used for the first phase and then data can be flattened for the second phase in order to allow the classical GPU memory accesses which are faster. These results constitute a step towards achieving a parallel efficient C++ like vector for modern GPU architectures.},
   archiveprefix = {arXiv},
-  keywords = {Computer Science - Distributed; Parallel; and Cluster Computing},
-  file = {C\:\\Users\\felix\\paper\\2022_Meneses et al\\Meneses et al_2022_GGArray.pdf;C\:\\Users\\felix\\Zotero\\storage\\TVU9JUAK\\2209.html}
+  keywords = {Computer Science - Distributed; Parallel; and Cluster Computing}
 }
 
 

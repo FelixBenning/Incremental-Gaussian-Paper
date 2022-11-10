@@ -1,4 +1,4 @@
-\section{Incremental Cholesky}
+\section{Incremental Cholesky}\label{sec: incremental cholesky}
 
 Assuming we already have the cholesky decomposition \(\Lmatrix_n\) of \(\Sigma_n\),
 can we find the cholesky decomposition \(\Lmatrix_{n+1}\) of the extended covariance
@@ -112,8 +112,7 @@ full matrix requires. Unfortunately packed storage only allows vectorized BLAS r
 (BLAS-2) but not block-wise operations (BLAS-3). And similarly the most performant
 cholesky decompositions want to access the data block-wise. So adding just one
 row \(l_n^T\) is not as performant as adding a block. To fix the first problem
-we propose ``Block Packed Storage'', which we will describe in Section~\ref{sec: memory
-layout}. To solve the second problem, one needs to aks for \(k\) new points in
+we propose ``Block Packed Storage'', which we will describe in Section~\ref{sec: memory layout}. To solve the second problem, one needs to aks for \(k\) new points in
 batches as described in the introduction. For random fields with large enough
 output dimension, this is not a problem as mentioned. But for the benefit of
 random fields with small output dimension, it makes sense to specialize
