@@ -156,6 +156,10 @@ then after the first three points we will always truncate the variance to zero
 and use the conditional expectation for the next point. This removes all the
 randomness from then on, and the resulting simulation is anything but the desired
 random field.
+\fxnote{
+	truncation would actually make \(\Lmatrix_n\) non-invertible. So we can
+	not actually continue. What is really the usual method in pivoted Cholesky??
+}
 
 \subsubsection{Skipping}
 
