@@ -1,19 +1,25 @@
 \section{Block Packed Storage}\label{sec: memory layout}
 
-Let \(\Lmatrix_n\) be a triangular matrix of size \(kn\). We can then represent
-\(\Lmatrix_n\) using full \(k\times k\) block matrices \(L_i\) in the following way
+Let \(\Lmatrix_n\) be a triangular matrix of size \(kn\) and define
+\[
+	g(r):= \frac{r(r+1)}2 = \sum_{j=1}^r j.
+\]
+We can then represent \(\Lmatrix_n\) using full \(k\times k\) block matrices
+\(L_i\) in the following way
 \[
 	\Lmatrix_n = \begin{pmatrix}
 		L_0 & \\
 		L_1 & L_2 \\
 		L_3 & L_4 & L_5 \\
 		\vdots & & & \ddots \\
-		L_{\frac{n(n-1)}2} & & \dots & & L_{\frac{n(n+1)}2 -1}
+		L_{g(n-1)} & & \dots & & L_{g(n) -1}
 	\end{pmatrix}
 \]
-where all the matrices \(L_0,L_2,L_5,\dots, L_{\frac{n(n+1)}2-1}\) with index
-\(i=(\sum_{j=1}^rj) - 1\) for some \(r\in\nat\) have zeros above their diagonal,
-while the other matrices are full matrices.
+where all the matrices
+\[
+	L_0,L_2,L_5,\dots, L_{\frac{n(n+1)}2-1} = L_{g(1)-1}, \dots, L_{g(n)-1}
+\]
+have zeros above their diagonal, while the other matrices are full matrices.
 
 If we now view \(Z_{n+1}\) as a \(k\) dimensional random vector we want to
 simulate in bulk, we can still use Algorithm~\ref{algo: sim Z_{n+1}}, if we
@@ -39,19 +45,32 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 	\newcommand{\xL}{{\color{violet} L}}
 	\newcommand{\xl}{{\color{teal} \Gamma}}
 	\begin{algorithm}
-		\caption{\(\Lmatrix_n^{-1}c_n\) stored as new row resulting in \(\Lmatrix_{n+1}\)}	
+		\caption{
+			\((\Lmatrix_n^{-1}c_n)^T=c_n^T (\Lmatrix_n^T)^{-1}\) stored as new row in \(\Lmatrix_{n+1}\).
+			Can be in-place if \(c_n^T\) is stored in this new row before usage.
+		}	
 		\label{algo: solve linear equation}
-		\For{\(r = 0,\dots,n-1\)}{
-			\(\xc \leftarrow C_r\)\tcp*[f]{red cache}\;
+		\For(in parallel){\(r = 0,\dots,n-1\)}{
+			\(\xc \leftarrow C_r^T\)\tcp*[f]{red cache, \(L_{g(n)+r}\) if in-place}\;
 			\For{\(i = 0,\dots, r-1\)}{
-				\(\xL \leftarrow L_{\frac{r(r+1)}2+i}\)\tcp*[f]{violet cache}\;
-				\(\xl \leftarrow L_{\frac{n(n+1)}2+i}\)\tcp*[f]{teal cache}\;
-				\(\xc = \xc - \xL\xl^T\)
+				{
+					\color{lightgray}
+				wait for \(i\le\) finished\_r\tcp*[f]{parallelization safety}\label{algo-line: parallel safety check}\;
+				}
+				\(\xL \leftarrow L_{g(r)+i}\)\tcp*[f]{violet cache}\;
+				\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
+				\(\xc = \xc - \xl\xL^T\)
 			}
-			\(\xL \leftarrow L_{\frac{r(r+1)}2+r}\)\tcp*[f]{
-				\(=L_{\frac{(r+2)(r+1)}2 -1}\) i.e. on the diagonal}\;
-			\(\xc = \xL^{-1} \xc\)\;
-			\(L_{\frac{n(n+1)}2+r} \leftarrow \xc^T\)\;
+			\(\xL \leftarrow L_{g(r)+r}\)\tcp*[f]{
+				\(=L_{g(r+1) -1}\) i.e. on the diagonal}\;
+			\(\xc = \xc/\xL^T\)\;
+			\(L_{g(n)+r} \leftarrow \xc\)\;
+			{
+				\color{lightgray}
+				acquire lock: finished\_r\;
+				finished\_r \(\leftarrow r\)\tcp*[f]{due to line~\ref{algo-line: parallel safety check} equivalent to increment}\;
+				release lock: finished\_r\;
+			}
 		}
 	\end{algorithm}
 }
@@ -72,12 +91,12 @@ calc lambda and simulate Z_{n+1}}. As the blue and violet cache only require
 		\(\xS \leftarrow \sigma_n\)\tcp*[f]{red cache}\;
 		\(\xZ \leftarrow 0_{k\times 1}\)\tcp*[f]{blue cache}\;
 		\For{\(i = 0,\dots,n-1\)}{
-			\(\xl \leftarrow L_{\frac{n(n+1)}2+i}\)\tcp*[f]{teal cache}\;
+			\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
 			\(\xS = \xS - \xl\xl^T\)\;
 			\(\xY \leftarrow Y_i\)\tcp*[f]{violet cache}\;
 			\(\xZ = \xZ + \xl^T \xY\)\;
 		}
-		\(L_{\frac{n(n+1)}2 + n} \leftarrow \chol(\xS)\)\tcp*[f]{\(=L_{\frac{(n+2)(n+1)}2-1}\) i.e. on the diagonal}\;
+		\(L_{g(n) + n} \leftarrow \chol(\xS)\)\tcp*[f]{\(=L_{g(n+1)-1}\) i.e. on the diagonal}\;
 		\KwRet{\(\xZ\)}
 	\end{algorithm}
 }
