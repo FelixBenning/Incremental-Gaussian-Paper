@@ -1,45 +1,86 @@
 \section{Block Packed Storage}\label{sec: memory layout}
+Single-step updates are useful in small scale settings to understand the local
+behaviour of the random field or if numerical stability is an issue. For the
+analysis of a large number of evaluations, however, this isn't the most
+efficient solution as we can't rely on BLAS-3 operations in the update process.
+To avoid this drawback our implementation offers bulk updates, which admit a
+performance boost while also preserving theoretical accuracy.
 
-Let \(\Lmatrix_n\) be a triangular matrix of size \(kn\) and define
+To this end, let us assume we are always simulating $k$ new evaluations of the
+random field, which we denote by $Z_{i} = (Z_{i}^{(1)},...,Z_{i}^{(k)})$. Then,
+the lower triangular matrix \(\Lmatrix_n\) from Section~\ref{sec: incremental
+cholesky} can be represented by \(k\times k\) block matrices \(L_{g(i)+j}\) with
 \[
 	g(r):= \frac{r(r+1)}2 = \sum_{j=1}^r j.
 \]
-We can then represent \(\Lmatrix_n\) using full \(k\times k\) block matrices
-\(L_i\) in the following way
+as
 \[
 	\Lmatrix_n = \begin{pmatrix}
-		L_0 & \\
-		L_1 & L_2 \\
-		L_3 & L_4 & L_5 \\
+		L_{g(0)+0} & \\
+		L_{g(1)+0} & L_{g(1)+1} \\
+		L_{g(2)+0} & L_{g(2)+1} & L_{g(2)+2} \\
 		\vdots & & & \ddots \\
-		L_{g(n-1)} & & \dots & & L_{g(n) -1}
+		L_{g(n-1)} & & \dots & & L_{g(n-1)+ n-1}
+	\end{pmatrix}
+	= \begin{pmatrix}
+		L_{0} & \\
+		L_{1} & L_{2} \\
+		L_{3} & L_{4} & L_{5} \\
+		\vdots & & & \ddots \\
+		L_{g(n-1)} & & \dots & & L_{g(n)-1}
 	\end{pmatrix}
 \]
 where all the matrices
 \[
-	L_0,L_2,L_5,\dots, L_{\frac{n(n+1)}2-1} = L_{g(1)-1}, \dots, L_{g(n)-1}
+	L_0,L_2,L_5,\dots, L_{g(n)-1} = L_{g(0)+0}, \dots, L_{g(n-1)+n-1}
 \]
 have zeros above their diagonal, while the other matrices are full matrices.
 
-If we now view \(Z_{n+1}\) as a \(k\) dimensional random vector we want to
-simulate in bulk, we can still use Algorithm~\ref{algo: sim Z_{n+1}}, if we
-use
+Now \(Z_{n+1}\) is a \(k\) dimensional random vector which we would like to
+simulate in bulk. For this purpose, observe that the covariance matrix of
+$(Z_1,...,Z_{n+1})$ is given by
 \[
-	c_n = \begin{pmatrix}
-		C_0\\
-		\vdots\\
-		C_{n-1}	
-	\end{pmatrix} \in \real^{kn\times k}
+	\Sigma_{n+1} = \begin{pmatrix} 
+		\Sigma_n & \mathbf{c}_n \\
+		\mathbf{c}_n^T 	& \mathbf{\sigma}_n^2
+	\end{pmatrix},
 \]
-where \(C_r\in\real^{k\times k}\) are block matrices representing the covariance
-of the old random vectors \(Z_i\) with \(Z_{n+1}\). And
+where $c_n,  \mathbf{\sigma}_n^2$ are now covariance matrices, i.e. $\mathbf{\sigma}_n^2 = \C(Z_{n+1})$ and
+\[  \mathbf{c}_n = 
+	\begin{pmatrix}
+	C_0 \\ \vdots \\ C_{n-1}
+	\end{pmatrix}  \quad \text{with} \quad 
+	C_i = 
+	\begin{pmatrix}
+		\C(Z_i^{(1)},Z_{n+1}^{(1)}) & \hdots & \C(Z_i^{(1)}, Z_{n+1}^{(k)}) \\
+		\vdots & \ddots & \vdots \\
+		\C(Z_i^{(k)},Z_{n+1}^{(1)}) & \hdots & \C(Z_i^{(k)}, Z_{n+1}^{(k)})
+	\end{pmatrix}.
+		 \]
+Similarly, $\Lmatrix_{n+1}$ becomes
+\[ \Lmatrix_{n+1} = 
+\begin{pmatrix}
+	\Lmatrix_n & \\
+	\mathbf{l}_n^T & \Lambda_n
+\end{pmatrix} \quad \text{with} \quad \mathbf{l}_n^T = (L_{n,0},...,L_{n,n}), \]
+where $\mathbf{l}_n$ and $\Lambda_n$ need to satisfy 
 \[
-	\sigma_n^2 \in \real^{k\times k}
+	\Lmatrix_n \mathbf{l}_n = \mathbf{c}_n, \quad \Lambda_n \Lambda_n^T + \mathbf{l}_n^T \mathbf{l}_n= \mathbf{\sigma}_n^2.
 \]
-would be the covariance matrix of \(Z_{n+1}\) itself. In order to apply
-Algorithm~\ref{algo: sim Z_{n+1}}, we only need to reinterpret the square root in
-line~\ref{algo-line: sqrt} as a cholesky decomposition.
-
+Hence, the procedure for a block update of $\Lmatrix_n$ is very similar to
+Algorithm~\ref{algo: sim Z_{n+1}}. Yet, its superiority becomes clear when
+exploiting the block structure of $\Lmatrix_n$ while determining $\mathbf{l}_n$:
+Considering the structure of $\Lmatrix_n$, the first block of $\mathbf{l}_n$,
+$L_{g(n)+0}^T$, is given by
+\[
+	L_{g(n)+0}^T = L_{g(0)+0}^{-1}C_0,
+\]
+which can be determined at low cost since $L_{g(0)+0}$ is lower triangular. For
+the second block, $L_{g(n)+1}$, we deduce the condition
+\[
+	L_{g(1)+0} L_{g(n)+0} + L_{g(1)+1} L_{g(n)+1} = C_1.
+\]
+Through recursion we arrrive at Algorithm~\ref{algo: solve linear equation} for determining $\mathbf{l}_n$.
 {
 	\newcommand{\xc}{{\color{red} C}}
 	\newcommand{\xL}{{\color{violet} L}}
@@ -59,11 +100,11 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 				}
 				\(\xL \leftarrow L_{g(r)+i}\)\tcp*[f]{violet cache}\;
 				\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
-				\(\xc = \xc - \xl\xL^T\)
+				\(\xc \leftarrow \xc - \xl\xL^T\)
 			}
 			\(\xL \leftarrow L_{g(r)+r}\)\tcp*[f]{
 				\(=L_{g(r+1) -1}\) i.e. on the diagonal}\;
-			\(\xc = \xc/\xL^T\)\;
+			\(\xc \leftarrow \xc/\xL^T\)\;
 			\(L_{g(n)+r} \leftarrow \xc\)\;
 			{
 				\color{lightgray}
@@ -75,9 +116,19 @@ line~\ref{algo-line: sqrt} as a cholesky decomposition.
 	\end{algorithm}
 }
 All of the caches in Algorithm~\ref{algo: solve linear equation} are of size
-\(k\times k\).  Our total cache needs are therefore \(3k^2\). To reimplement the
-remaining steps of Algorithm~\ref{algo: sim Z_{n+1}} we use Algorithm~\ref{algo:
-calc lambda and simulate Z_{n+1}}. As the blue and violet cache only require
+\(k\times k\).  Our total cache needs are therefore \(3k^2\). Recycling our
+block vector of standard normal random values $Y_{1:n} = (Y_1,...,Y_n)$ and
+recalling that
+\[
+	\Lambda \Lambda^T
+	= \mathbf{\sigma}_n^2 - \sum_{i=0}^{n-1}L_{n,i}L_{n,i}^T, \quad Z_{1:(n+1)}
+	= \begin{pmatrix}
+		\Lmatrix_n Y_{1:n} \\
+		\mathbf{l}_n^TY_{1:n} + \Lambda_n Y_{n+1}
+	\end{pmatrix},
+\]
+we implement the remaining steps of Algorithm~\ref{algo: sim Z_{n+1}} in Algorithm~\ref{algo:
+calc lambda and simulate Z_{n+1}} by replacing the square root with a Cholesky decomposition. As the blue and violet caches only require
 \(k\times 1\) space, it requires less than \(3k^2\) cache space for \(k\ge 2\).
 
 {
@@ -88,13 +139,13 @@ calc lambda and simulate Z_{n+1}}. As the blue and violet cache only require
 	\begin{algorithm}
 		\caption{Calculation of \(\lambda_n\) and Simulation of \(Z_{n+1}\)}	
 		\label{algo: calc lambda and simulate Z_{n+1}}
-		\(\xS \leftarrow \sigma_n\)\tcp*[f]{red cache}\;
+		\(\xS \leftarrow \sigma_n^2\)\tcp*[f]{red cache}\;
 		\(\xZ \leftarrow 0_{k\times 1}\)\tcp*[f]{blue cache}\;
 		\For{\(i = 0,\dots,n-1\)}{
 			\(\xl \leftarrow L_{g(n)+i}\)\tcp*[f]{teal cache}\;
-			\(\xS = \xS - \xl\xl^T\)\;
+			\(\xS \leftarrow \xS - \xl\xl^T\)\;
 			\(\xY \leftarrow Y_i\)\tcp*[f]{violet cache}\;
-			\(\xZ = \xZ + \xl^T \xY\)\;
+			\(\xZ \leftarrow \xZ + \xl^T \xY\)\;
 		}
 		\(L_{g(n) + n} \leftarrow \chol(\xS)\)\tcp*[f]{\(=L_{g(n+1)-1}\) i.e. on the diagonal}\;
 		\KwRet{\(\xZ\)}
